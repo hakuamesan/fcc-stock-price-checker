@@ -75,8 +75,11 @@ module.exports = function(app) {
       }
 
       if (multiple && stockData.length == 2) {
+        stockData[0].likes = likes ? 1 : 0;
+        stockData[1].likes = likes ? 1 : 0;
         res.json({ stockData });
       } else if ( !multiple && stockData) {
+        stockData.likes = likes ? 1 : 0;
         res.json({stockData});
       }
   
