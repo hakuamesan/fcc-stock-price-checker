@@ -1,6 +1,5 @@
 **FreeCodeCamp**- Information Security and Quality Assurance
 ------
-
 Live Version: https://lava-fluffy-star.glitch.me/
 
 Project Stock Price Checker

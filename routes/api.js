@@ -10,71 +10,97 @@
 
 var expect = require("chai").expect;
 var MongoClient = require("mongodb");
-var got = require("got");
-const superagent = require('superagent');
-const axios = require('axios');
+
+const axios = require("axios");
 
 const CONNECTION_STRING = process.env.DB; //MongoClient.connect(CONNECTION_STRING, function(err, db) {});
 
 module.exports = function(app) {
-  app.route("/api/stock-prices")
-    .get(function(req, res) {
+  app.route("/api/stock-prices").get(function(req, res) {
     //console.log(req);
-    var stock = req.query.stock1;
+    var stock = req.query.stock;
+    var likes = req.query.like;
+    let url1, url2;
+    let stockData = null;
+    var multiple = false;
+    var a = 1;
+    
+    
+     if (Array.isArray(stock)) {
+      multiple = true;
+      stockData = [];
+     }
+    
+    function getPrice(stock, callback) {
+      let url = "https://repeated-alpaca.glitch.me/v1/stock/" + stock + "/quote";
+      console.log("getPrice url=" + url);
+      let data = axios
+        .get(url)
+        .then(result => {
+          
 
-    console.log("Stock = " + stock);
-/*
-    got("https://repeated-alpaca.glitch.me/v1/stock/${stock}/quote", {
-      json: true
-    })
-      .then(response => {
-        console.log("ans="+response.body.url);
-        console.log("exp="+response.body.explanation);
-      })
-      .catch(error => {
-        console.log("err="+  error.body);
-      });
-  */
-    
-/*
-superagent.get('https://repeated-alpaca.glitch.me/v1/stock/${stock}/quote')
-.end((err, res) => {
-  if (err) { return console.log("error:"+err); }
-  console.log("res="+res);
-  
-  for (let val in res) {
-    console.log(res[val]);
-  }
-  
-});
-  */
-  
-  
-let url =  "https://repeated-alpaca.glitch.me/v1/stock/"+ stock +"/quote";
-console.log("url="+url);
+//          console.log("symbol:" + result.data["symbol"]);
+//          console.log("price:" + result.data["latestPrice"]);
 
-let {data} =  axios.get(url)
-  .then(res => {
-    console.log("res="+res);
-  
-    //res.json(data);
-    console.log("data=" + data);
+          var r = [
+            {
+              stock: result.data["symbol"],
+              price: result.data["latestPrice"]
+            }
+          ];
+          console.log("result=" + JSON.stringify(r));
+          //console.table(r);
+        
+          callback("stockData", {
+            stock: result.data['symbol'],
+            price: result.data['latestPrice']
+          });
+        })
+        .catch(error => {
+          console.log("err=" + error);
+          callback('stockData', { error: 'external source error' });
+
+        });
+    }
+
     
-    /*
-  for (let val in res) {
-    console.log(res[val]);
-  }*/
+    function sync(type, data) {
+      console.log("In sync");
+      console.log("type=" + type + " data=" + JSON.stringify(data));
+      a++;
+//      console.log("a="+a + " len=" + stockData.length);
+      
+      if (type === "stockData") {
+        (multiple) ? stockData.push(data) : (stockData = data);
+      }
+
+      if (multiple && stockData.length == 2) {
+        res.json({ stockData });
+      } else if ( !multiple && stockData) {
+        res.json({stockData});
+      }
   
-  
-  })
-  .catch(error => {
-    console.log("err="+error);
+    }
+
+   
+
+    
+    
+    
+    
+    
+    if (multiple){
+      console.log("Stock1 = " + stock[0]);
+      console.log("Stock2 = " + stock[1]);
+
+      getPrice(stock[0], sync);
+      getPrice(stock[1], sync);
+    } else {
+      console.log("Stock = " + stock);
+
+      getPrice(stock, sync);
+    }
+
+    
   });
-    
-    
-  
-  });
-  
-  
-  
 };
